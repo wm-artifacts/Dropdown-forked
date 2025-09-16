@@ -1,0 +1,149 @@
+{
+  "migrationTaskDetailsList" : [ {
+    "onReleaseVersion" : "11.7",
+    "migrationVersion" : 117.01,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.7",
+    "migrationVersion" : 117.02,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.7",
+    "migrationVersion" : 117.03,
+    "migrationMessages" : [ {
+      "msg" : "Added the pattern {} to {} file",
+      "args" : [ "src/main/webapp/WEB-INF/prefabs/**/page.min.json", ".gitignore" ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.7",
+    "migrationVersion" : 117.04,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.8",
+    "migrationVersion" : 118.01,
+    "migrationMessages" : [ {
+      "msg" : "Updated {} file attributes from javax to Jakarta",
+      "args" : [ "web.xml" ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.8",
+    "migrationVersion" : 118.02,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.8",
+    "migrationVersion" : 118.03,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.8",
+    "migrationVersion" : 118.04,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.8",
+    "migrationVersion" : 118.05,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.8",
+    "migrationVersion" : 118.06,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.8",
+    "migrationVersion" : 118.07,
+    "migrationMessages" : [ {
+      "msg" : "Updated aria label attribute with values from hint attribute in {} page markup files",
+      "args" : [ 1 ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.9",
+    "migrationVersion" : 119.02,
+    "migrationMessages" : [ {
+      "msg" : "Updated Dockerfile which simplifies WaveMaker App Docker Image creation",
+      "args" : [ ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.9",
+    "migrationVersion" : 119.03,
+    "migrationMessages" : [ {
+      "msg" : "Added languageBundleSources and serviceDefSources property with value as STATIC in .wmproject.properties",
+      "args" : [ ]
+    }, {
+      "msg" : "Added app.apiUrl property in app.properties and made it configurable from all profile property files with empty value as default",
+      "args" : [ ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.9",
+    "migrationVersion" : 119.04,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.9",
+    "migrationVersion" : 119.05,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.9",
+    "migrationVersion" : 119.06,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.9",
+    "migrationVersion" : 119.072,
+    "migrationMessages" : [ {
+      "msg" : "Updated ui-build.js and build.xml files",
+      "args" : [ ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.10",
+    "migrationVersion" : 1110.01,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.10",
+    "migrationVersion" : 1110.02,
+    "migrationMessages" : [ {
+      "msg" : "Updated optimizeUIBuild default value to false in build.xml file",
+      "args" : [ ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.10",
+    "migrationVersion" : 1110.03,
+    "migrationMessages" : [ {
+      "msg" : "Updated apache http logger package from org.apache.http.client to org.apache.hc.client5 in log4j2.xml",
+      "args" : [ ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.10",
+    "migrationVersion" : 1110.04,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.10",
+    "migrationVersion" : 1110.05,
+    "migrationMessages" : [ {
+      "msg" : "Updated ui-build.js file with fixes supporting concurrent builds",
+      "args" : [ ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.11",
+    "migrationVersion" : 1111.01,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.11",
+    "migrationVersion" : 1111.02,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.11",
+    "migrationVersion" : 1111.03,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.11",
+    "migrationVersion" : 1111.04,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.11",
+    "migrationVersion" : 1111.05,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.11",
+    "migrationVersion" : 1111.06,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.11",
+    "migrationVersion" : 1111.07,
+    "migrationMessages" : [ ]
+  } ]
+}

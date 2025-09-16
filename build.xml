@@ -3,12 +3,14 @@
         Project Build Helper
     </description>
     <property name="webInf" location="src/main/webapp/WEB-INF"/>
-    <property name="uiOutputDirectory" location="target/ui-build/output-files"/>
     <!-- Below are the default build values -->
     <property name="cdn-url" value=""/>
-    <property name="optimizeUIBuild" value=""/>
+    <property name="app.cdnUrl" value="./"/>
+    <property name="app.apiUrl" value="./"/>
+    <property name="optimizeUIBuild" value="false"/>
     <property name="build.ui.mode" value="wm"/>
     <property name="app.pwa.enabled" value="false"/>
+    <property name="exportWebComponent" value="false"/>
 
     <condition property="wmBuild" value="true">
         <equals arg1="${build.ui.mode}" arg2="wm" casesensitive="false" trim="true"/>
@@ -73,19 +75,13 @@
         </exec>
     </target>
 
-    <target name="generate-ui-zip" if="angularBuild">
-        <echo>creating target/ui-artifact.zip from ${uiOutputDirectory}.</echo>
-        <zip destfile="target/ui-artifact.zip" basedir="${uiOutputDirectory}"/>
-    </target>
-
     <target name="uiBuild">
         <antcall target="cmd-template">
             <param name="cmd.name" value="node"/>
             <param name="cmd.arg"
-                value="ui-build.js --nodeVMArgs='${build.ui.node.args}' --ngBuildParams='${build.ui.ng.config}' --runtimeUIVersion=${wavemaker.app.runtime.ui.version} --appSrc=. --appTarget=./target/ui-build/generated-app --buildType=${build.ui.mode} --platformType=${wavemaker.artifactType} --cdnUrl=_cdnUrl_ --optimizeUIBuild=${optimizeUIBuild} --pwa=${app.pwa.enabled} --csp=${security.general.csp.enabled} --spa=${app.build.ui.spa.enabled}"/>
+                value="ui-build.js --nodeVMArgs='${build.ui.node.args}' --ngBuildParams='${build.ui.ng.config}' --runtimeUIVersion=${wavemaker.app.runtime.ui.version} --appSrc=. --appTarget=./target/ui-build/generated-app --buildType=${build.ui.mode} --platformType=${wavemaker.artifactType} --cdnUrl=${app.cdnUrl} --apiUrl=${app.apiUrl} --optimizeUIBuild=${optimizeUIBuild} --exportWebComponent=${exportWebComponent} --pwa=${app.pwa.enabled} --csp=${security.general.csp.enabled} --spa=${app.build.ui.spa.enabled}"/>
             <param name="cmd.executable.dir" value="./"/>
         </antcall>
-        <antcall target="generate-ui-zip"/>
     </target>
 
     <target name="generate-resources">

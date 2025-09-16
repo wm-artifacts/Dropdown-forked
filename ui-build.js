@@ -19,363 +19,286 @@
  *  generateAngularApp: To generate the angular app for the project
  */
 
- const { execSync } = require("child_process");
- const fs = require('fs');
- const os = require('os');
- const UI_BUILD_ERROR_LOG = 'UI BUILD ERROR';
+const {execSync} = require("child_process");
+const fs = require('fs');
+const os = require('os');
+const path = require("path");
 
- const MSG_CODEGEN_LOG = 'CODEGEN ANGULAR APP: ';
- const MSG_APP_RUNTIME_WM_BUILD_LOG = 'APP RUNTIME WM BUILD : ';
-
- const MSG_ANGULAR_CODEGEN_SUCCESS = 'ANGULAR_CODEGEN_SUCCESS';
- const MSG_APP_RUNTIME_WM_BUILD_SUCCESS = 'WAVEMAKER_APP_RUNTIME_WM_BUILD_SUCCESS';
-
- const NPM_PACKAGE_SCOPE = '@wavemaker';
-
- /**
-  * Read the console arguments and prepare the object.
-  * @returns console arguments as key value pairs
-  */
-  const getArgs = (customArgs) => {
-    const args = {};
-    let arguments = customArgs || process.argv;
-    arguments
-        .slice(2, arguments.length)
-         .forEach(arg => {
-             if (arg.slice(0, 2) === '--') {
-                 const longArg = arg.split('=');
-                 const longArgFlag = longArg[0].slice(2, longArg[0].length);
-                 const longArgValue = longArg.length > 2 ? longArg.slice(1, longArg.length).join('=') : longArg[1];
-                 args[longArgFlag] = longArgValue;
-             }
-         });
-     return args;
- }
-
- const args = getArgs();
-
-
- // TO capture the ctrl+C signal
- process.on('SIGINT', function (e) {
-     console.log("Caught interrupt signal", e);
-     process.exit(1);
- });
-
- const EXECUTE_SYNC_CONFIG = { stdio: 'inherit' };
-
-
- /**
-  *  To check the npm package installation successs or not
-  * @param {*} path  File path where installation success message was written
-  * @param {*} msg   Success messsage to confirm that package was installed
-  * @returns boolean true/false
-  */
- const isNPMPackageExist = (path, msg) => {
-     if (fs.existsSync(path)) {
-         const successMsg = fs.readFileSync(path, { encoding: 'utf8', flag: 'r' });
-         if (successMsg == msg) {
-             return true;
-         }
-
-     } else {
-         return false;
-     }
- }
-
- /**
-  * Copy source to destination each file by navigating to the folder recursively
-  * @param {string} src  Source folder to copy.
-  * @param {string} dest Destination folder to copy.
-  */
- const copyRecursiveSync = (src, dest) => {
-     let exists = fs.existsSync(src), stats = exists && fs.statSync(src), isDirectory = exists && stats.isDirectory();
-     if (isDirectory) {
-         if (!fs.existsSync(dest)) {
-             fs.mkdirSync(dest, { recursive: true });
-         }
-         fs.readdirSync(src).forEach(function (childItemName) {
-             copyRecursiveSync(src + '/' + childItemName, dest + '/' + childItemName);
-         });
-     } else {
-         fs.copyFileSync(src, dest);
-     }
- };
-
- /**
-  * To run the system command via node  child process.
-  * @param {*} cmd Command in string format to execute in node environment
-  * @param {*} errorCallback callback if anything needs to be handled on command failure
-  */
- const executeSyncCmd = (cmd, errorCallback, msg) => {
-     try {
-        console.log(msg + 'Current running cmd: ' + cmd);
-        execSync(cmd, { stdio: 'inherit' });
-        console.log(msg + ' : ' + 'SUCCESS');
-     } catch (err) {
-         if (errorCallback) {
-             errorCallback(err);
-         }
-         console.log(msg + 'FAILED command: ' + cmd, err);
-         process.exit(err.code || err.pid);
-     }
- }
-
- /**
-  *  Check  node modules package were installed or not
-  *  Create dir for  packages with the version name
-  *  Copy the generated angular app package.json to PATH_NPM_PACKAGE folder
-  *  Run npm install
-  *  Write  success file to be make sure it was installed successfully.
-  */
- const downloadNPMPackage = (packageInfo) => {
-     const HOME_DIR = os.homedir();
-     const PATH_NPM_PACKAGE = (packageInfo.baseDir || HOME_DIR + '/.wm/node_modules/') + packageInfo.name + '/' + packageInfo.version;
-     const PATH_NPM_PACKAGE_SUCCESS = PATH_NPM_PACKAGE + '/.SUCCESS';
-     let isError = false;
-     // To check global app runtime node modules.
-     if (!isNPMPackageExist(PATH_NPM_PACKAGE_SUCCESS, packageInfo.successMsg)) {
-         fs.mkdirSync(PATH_NPM_PACKAGE, { recursive: true });
-         let npmInstallCMD = 'npm install ';
-         if (packageInfo.packageJsonFile && fs.existsSync(packageInfo.packageJsonFile)) {
-             fs.copyFileSync(packageInfo.packageJsonFile, PATH_NPM_PACKAGE + '/package.json');
-         } else {
-            let packageJsonFile = fs.openSync(PATH_NPM_PACKAGE + '/package.json', 'w');
-            fs.writeSync(packageJsonFile, '{}');
-            fs.closeSync(packageJsonFile);
-            npmInstallCMD = npmInstallCMD + '--prefix ' + PATH_NPM_PACKAGE + ' ';
-            npmInstallCMD = npmInstallCMD + packageInfo.scope + '/' + packageInfo.name + '@' + packageInfo.version;
-        }
-        executeSyncCmd(npmInstallCMD, () => {
-            isError = true;
-            console.log(packageInfo.infoMsg + ' Something wrong with npm installation');
-        }, packageInfo.infoMsg);
-
-        //only create a .SUCCESS file when there is no error
-        if(!isError) {
-            isError = false;
-            fs.writeFileSync(PATH_NPM_PACKAGE_SUCCESS, packageInfo.successMsg);
-        }
-     } else {
-         console.log(packageInfo.infoMsg + ' Node packages already installed!');
-     }
-
-     return PATH_NPM_PACKAGE;
-
- }
-
- /**
-  *  Check the app-runtime-wm-build npm package already installed or not.
-  *  Install the app-runtime-wm-build if package not yet installed.
-  *  Based on the platform type copy the bundle script into '/src/main/webapp'
-  * @param {*} sourceDir
-  * @returns
-  */
- const buildAppInWMMode = (sourceDir, baseDir) => {
-
-     /**
-     * Download app-runtime-wm-build package and install if it doesn't exist
-     */
-     let appRuntimeWMBuildPackageInfo = {
-         scope: NPM_PACKAGE_SCOPE,
-         version: args.runtimeUIVersion,
-         name: 'app-runtime-wm-build',
-         packageJsonFile: '',
-         successMsg: MSG_APP_RUNTIME_WM_BUILD_SUCCESS,
-         infoMsg: MSG_APP_RUNTIME_WM_BUILD_LOG
-
-     };
-
-     appRuntimeWMBuildPackageInfo.baseDir = baseDir;
-     const PATH_WAVEMAKER_APP_RUNTIME_WM_BUILD = downloadNPMPackage(appRuntimeWMBuildPackageInfo);
-
-     const FILE_PATH_WAVEMAKER_APP_RUNTIME_WM_BUILD = PATH_WAVEMAKER_APP_RUNTIME_WM_BUILD + '/node_modules/' + appRuntimeWMBuildPackageInfo.scope + '/' + appRuntimeWMBuildPackageInfo.name + '/';
-
-     const PLATFORM_TYPE = { WEB: 'wmapp', MOBILE: 'wmmobile' }
-     let bundleFolder = '';
-     if (args.platformType === PLATFORM_TYPE.WEB) {
-        bundleFolder = 'wmapp/';
-     } else if (args.platformType = PLATFORM_TYPE.MOBILE) {
-        bundleFolder = 'wmmobile/';
-     } else {
-         console.log(UI_BUILD_ERROR_LOG + ' Invalid script path!');
-         return;
-     }
-     copyRecursiveSync(FILE_PATH_WAVEMAKER_APP_RUNTIME_WM_BUILD + bundleFolder, sourceDir + '/target/ui-build/output-files/' + bundleFolder);
- }
-
- /**
-  * To check the platform is windows or not
-  * @returns boolean
-  */
- const isWindows = () => {
-     return process.platform === "win32";
- }
+const MSG_CODEGEN_LOG = 'CODEGEN ANGULAR APP: ';
+const MSG_ANGULAR_CODEGEN_SUCCESS = 'ANGULAR_CODEGEN_SUCCESS';
+const NPM_PACKAGE_SCOPE = '@wavemaker';
 
 /**
-  * Download angular codegen package and install if it is doesn't exist
-  * @returns Return the codegen package path
+ * Read the console arguments and prepare the object.
+ * @returns console arguments as key value pairs
  */
- const downloadCodegenAndGetTheInstallationPath = (basedir) => {
-        let codegenPackageInfo = {
-            scope: NPM_PACKAGE_SCOPE,
-            version: args.runtimeUIVersion,
-            name: 'angular-codegen',
-            packageJsonFile: '',
-            successMsg: MSG_ANGULAR_CODEGEN_SUCCESS,
-            infoMsg: MSG_CODEGEN_LOG
-
-        };
-        codegenPackageInfo.baseDir = basedir;
-        const PATH_ANGULAR_CODEGEN =  downloadNPMPackage(codegenPackageInfo);
-        return PATH_ANGULAR_CODEGEN + '/node_modules/' + codegenPackageInfo.scope + '/' + codegenPackageInfo.name + '/';
- }
-
- /**
-  *
-  * @param {*} sourceDir project source directory to generate the angular app
-  * @param {*} ngBuildParams angular app build params along with cdn URL
-  * @param {*} codegenPath codegen path to generate the angular app
-  *  Generate the angular app from codegen in target folder
-  */
-  const generateAngularApp = async (sourceDir, ngBuildParams, codegenPath, appTarget) => {
-    const CODEGEN_PATH = codegenPath + 'src/codegen-cli.js';
-
-    if (fs.existsSync(CODEGEN_PATH)) {
-       let deployUrl = 'ng-bundle/';
-        if(ngBuildParams) {
-           let buildArgs = getArgs(ngBuildParams.split(' '));
-           if (buildArgs && buildArgs["deploy-url"]) {
-               deployUrl = buildArgs["deploy-url"];
-           }
+const getArgs = (customArgs) => {
+    const args = {};
+    let arguments = customArgs || process.argv;
+    arguments = customArgs ? customArgs : arguments.slice(2, arguments.length);
+    arguments.forEach(arg => {
+        if (arg.slice(0, 2) === '--') {
+            const longArg = arg.split('=');
+            const longArgFlag = longArg[0].slice(2, longArg[0].length);
+            let longArgValue = longArg.length > 2 ? longArg.slice(1, longArg.length).join('=') : longArg[1];
+            if (longArgFlag === "cdnUrl") {
+                longArgValue = longArgValue === "" ? "./" : longArgValue;
+            }
+            args[longArgFlag] = longArgValue;
         }
-        const { generateCodegenAngularApp } = require(CODEGEN_PATH);
-        console.log(MSG_CODEGEN_LOG + 'Generating the angular App...');
-       await generateCodegenAngularApp(sourceDir, appTarget, deployUrl, (args.pwa === 'true' ? true : false), codegenPath, args.csp === 'true', args.spa === 'true');
-       console.log(MSG_CODEGEN_LOG + 'Angular app generated !');
-
-    } else {
-        console.log(MSG_CODEGEN_LOG + " : CODEGEN-CLI not found")
-    }
-}
-
- /**
-  *
-  * @param {*} sourceDir
-  * @param {*} appTarget
-  * @param {*} generate_page The generated page name
-  * @param {*} codegenPath
-  */
-  const generateAngularAppPage = async (sourceDir, appTarget, generate_page, codegenPath) => {
-    const CODEGEN_PATH = codegenPath + 'src/codegen-cli.js';
-    if (fs.existsSync(CODEGEN_PATH)) {
-        const { generatePage } = require(CODEGEN_PATH);
-        await generatePage(sourceDir, appTarget, generate_page, codegenPath, args.csp === 'true');
-    } else {
-        console.log(MSG_CODEGEN_LOG + " : CODEGEN-CLI not found")
-    }
-
-}
-
- /**
-  * validate the cdn url and returns the angular build params
-  * @returns build params
-  */
- const getNgBuildParams = () => {
-    let cdnUrl = args.cdnUrl ? args.cdnUrl.trim() : "";
-    let ngBuildParams = args.ngBuildParams;
-    // If cdn-url exist add the build params as deploy-url
-    if (cdnUrl) {
-        ngBuildParams += ` --deploy-url=${cdnUrl}`;
-    }
-    return ngBuildParams;
- }
-
- /**
-  *  Check codgen npm package already installed or not.
-  *  Install the codegen if package not yet installed.
-  *  Run generate and build angular script.
-  *  Prepare the ng-build params deploy url if cdn url present in arguments
-  * @param {*} angularBuildConfig
-  *  Properties: sourceDir,appTarget, baseDir
-  */
- const buildAppInAngularMode = async (angularBuildConfig) => {
-    let ngBuildParams = getNgBuildParams();
-
-    /**
-     * Download angular codegen package and install if it doesn't exist
-     */
-    let  pathAngularCodegen = downloadCodegenAndGetTheInstallationPath(angularBuildConfig.baseDir);
-
-    await generateAngularApp(angularBuildConfig.sourceDir, ngBuildParams, pathAngularCodegen, angularBuildConfig.appTarget);
-
-     const SCRIPT_PATH_ANGULAR_APP_GENERATOR = pathAngularCodegen + 'build-angular-app.js';
-  //  build angular app.
-  if (fs.existsSync(SCRIPT_PATH_ANGULAR_APP_GENERATOR)) {
-    const { buildAngularApp } = require(SCRIPT_PATH_ANGULAR_APP_GENERATOR);
-    buildAngularApp({
-        runtimeUIVersion: args.runtimeUIVersion ,
-        codegenPath: pathAngularCodegen,
-        optimizeUIBuild: angularBuildConfig.optimizeUIBuild,
-        appTarget: angularBuildConfig.appTarget,
-        appSrc: angularBuildConfig.sourceDir,
-        nodeVMArgs: args.nodeVMArgs,
-        ngBuildParams: ngBuildParams
-
     });
-
-    copyRecursiveSync(angularBuildConfig.sourceDir + '/target/ui-build/generated-app/dist/', angularBuildConfig.sourceDir + '/target/ui-build/output-files/');
-} else {
-    console.log(UI_BUILD_ERROR_LOG + " build-angular-app.js not found! ");
+    return args;
 }
 
+const args = getArgs();
+
+
+// TO capture the ctrl+C signal
+process.on('SIGINT', function (e) {
+    console.log("Caught interrupt signal", e);
+    process.exit(1);
+});
+
+/**
+ *  To check the npm package installation successs or not
+ * @param {*} path  File path where installation success message was written
+ * @param {*} msg   Success messsage to confirm that package was installed
+ * @returns boolean true/false
+ */
+const isNPMPackageExist = (path, msg) => {
+    if (fs.existsSync(path)) {
+        const successMsg = fs.readFileSync(path, {encoding: 'utf8', flag: 'r'});
+        if (successMsg == msg) {
+            return true;
+        }
+
+    } else {
+        return false;
+    }
 }
 
- /**
-  *  generateAngularApp : If it is just to generate the angular app in project.
-  * If wm buildType , do the build in wavemaker mode.
-  * If angular buildType, do the build in angular mode.
-  */
- const init = async () => {
-     const BUILD_TYPE = { WM: 'wm', ANGULAR: 'angular' };
-     const sourceDir = (args.appSrc || '.');
-     let appTarget = (args.appTarget || 'target/ui-build/generated-app');
+/**
+ * To run the system command via node  child process.
+ * @param {*} cmd Command in string format to execute in node environment
+ * @param {*} errorCallback callback if anything needs to be handled on command failure
+ */
+const executeSyncCmd = (cmd, errorCallback, msg) => {
+    try {
+        console.log(msg + 'Current running cmd: ' + cmd);
+        execSync(cmd, {stdio: 'inherit'});
+        console.log(msg + ' : ' + 'SUCCESS');
+    } catch (err) {
+        if (errorCallback) {
+            errorCallback(err);
+        }
+        console.log(msg + 'FAILED command: ' + cmd, err);
+        process.exit(err.code || err.pid);
+    }
+}
+
+/**
+ *  Check  node modules package were installed or not
+ *  Create dir for  packages with the version name
+ *  Copy the generated angular app package.json to PATH_NPM_PACKAGE folder
+ *  Run npm install
+ *  Write  success file to be make sure it was installed successfully.
+ */
+const downloadNPMPackage = async (packageInfo) => {
+    const HOME_DIR = os.homedir();
+    const PATH_NPM_PACKAGE = path.join((packageInfo.baseDir || HOME_DIR + '/.wm/node_modules/'), packageInfo.name, packageInfo.version);
+    const PATH_NPM_PACKAGE_SUCCESS = PATH_NPM_PACKAGE + '/.SUCCESS', LOCK_FILE = path.join(PATH_NPM_PACKAGE, ".LOCK");
+    let isError = false;
+    try {
+        // going to install in the .wm folder if baseDir is not defined(optimizeUIBuild true)
+        if (!packageInfo.baseDir) {
+            // To check global app runtime node modules.
+            if (!isNPMPackageExist(PATH_NPM_PACKAGE_SUCCESS, packageInfo.successMsg)) {
+                // Check if another process is already installing
+                if (fs.existsSync(LOCK_FILE)) {
+                    console.log(`Waiting for another build to complete npm install... for package ${packageInfo.name}`);
+                    await waitForLock(LOCK_FILE, 20 * 60 * 1000); // Wait for 20 minutes (timeout in milliseconds)
+                } else {
+                    // Acquire the lock
+                    fs.mkdirSync(PATH_NPM_PACKAGE, {recursive: true});
+                    fs.writeFileSync(LOCK_FILE, "PROGRESS");
+
+                    processCodegenApp(packageInfo, PATH_NPM_PACKAGE);
+
+                    //only create a .SUCCESS file when there is no error
+                    if (!isError) {
+                        isError = false;
+                        fs.writeFileSync(PATH_NPM_PACKAGE_SUCCESS, "SUCCESS");
+                    }
+                }
+            } else {
+                console.log(packageInfo.infoMsg + ` Node packages already installed! for package ${packageInfo.name}`);
+            }
+        } else {
+            processCodegenApp(packageInfo, PATH_NPM_PACKAGE);
+        }
+    } catch (err) {
+        deleteFiles([PATH_NPM_PACKAGE_SUCCESS, LOCK_FILE])
+        console.log(`Something went wrong while installing - for package ${packageInfo.name}`, err);
+        process.exit(typeof err.code === 'number' ? err.code : 1);
+    } finally {
+        //cleanup : in windows / optimizeUIBuild is false, we need to delete the temp downloaded package
+        if (!packageInfo.baseDir) {
+            deleteFiles([LOCK_FILE]);
+        }
+    }
+    return PATH_NPM_PACKAGE;
+}
+
+/**
+ *
+ */
+const processCodegenApp = (packageInfo, PATH_NPM_PACKAGE) => {
+    let npmInstallCMD = 'npm install --legacy-peer-deps ';
+    if (packageInfo.packageJsonFile && fs.existsSync(packageInfo.packageJsonFile)) {
+        fs.copyFileSync(packageInfo.packageJsonFile, PATH_NPM_PACKAGE + '/package.json');
+        try {
+            //expecting this lock file to be present for exact versions to be downloaded from private registry
+            fs.copyFileSync(`${path.dirname(packageInfo.packageJsonFile)} + /package-lock.json`, `${PATH_NPM_PACKAGE} + /package-lock.json`);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                console.error(`Info: package-lock.json file not found at ${path.dirname(packageInfo.packageJsonFile)}`);
+            }
+        }
+    } else {
+        npmInstallCMD = npmInstallCMD + '--prefix ' + PATH_NPM_PACKAGE + ' ';
+        npmInstallCMD = npmInstallCMD + packageInfo.scope + '/' + packageInfo.name + '@' + packageInfo.version;
+    }
+    executeSyncCmd(npmInstallCMD, (e) => {
+        console.log(packageInfo.infoMsg + ' Something wrong with npm installation - ', e);
+        throw Error(e);
+    }, packageInfo.infoMsg);
+}
+
+/**
+ *
+ */
+const deleteFiles = (files) => {
+    files.forEach(file => {
+        try {
+            fs.rmSync(file, { force: true });
+            console.log(`Successfully deleted file - ${file}`);
+        } catch (err) {
+            console.error(`Error while deleting file ${file}`, err);
+            throw new Error(`Error while deleting file: ${file}, Error: ${err}`);
+        }
+    });
+}
+
+/**
+ *
+ * @param lockFile
+ * @param timeout
+ * @returns {Promise<void>}
+ */
+const waitForLock = async (lockFile, timeout) => {
+    timeout = timeout || 20 * 60 * 1000 // Wait for 20 minutes (timeout in milliseconds)
+    // Helper function to wait for the lock to be released with a timeout
+    const startTime = Date.now();
+    while (fs.existsSync(lockFile)) {
+        if (Date.now() - startTime > timeout) {
+            console.error('Timeout!! - waiting for the lock to be released. Exiting...');
+            process.exit(1); // Terminate the process with an error code
+        }
+        await sleep(1000); // Wait for 1 second before checking again
+    }
+};
+
+/**
+ *
+ * @param ms
+ * @returns {Promise<unknown>}
+ */
+const sleep = (ms) => {
+    // Helper function to sleep for a given time
+    return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+/**
+ * To check the platform is windows or not
+ * @returns boolean
+ */
+const isWindows = () => {
+    return process.platform === "win32";
+}
+
+/**
+ * Download angular codegen package and install if it is doesn't exist
+ * @returns Return the codegen package path
+ */
+const downloadCodegenAndGetTheInstallationPath = async (basedir) => {
+    let codegenPackageInfo = {
+        scope: NPM_PACKAGE_SCOPE,
+        version: args.runtimeUIVersion,
+        name: 'angular-codegen',
+        packageJsonFile: '',
+        successMsg: MSG_ANGULAR_CODEGEN_SUCCESS,
+        infoMsg: MSG_CODEGEN_LOG
+    };
+    codegenPackageInfo.baseDir = basedir;
+    const PATH_ANGULAR_CODEGEN = await downloadNPMPackage(codegenPackageInfo);
+    return PATH_ANGULAR_CODEGEN + '/node_modules/' + codegenPackageInfo.scope + '/' + codegenPackageInfo.name + '/';
+}
+
+/**
+ *
+ */
+const preBuildHook = async () => {
+    //write custom code here
+}
+
+/**
+ *
+ */
+const postBuildHook = async () => {
+    //write custom code here
+}
+
+/**
+ *  generateAngularApp : If it is just to generate the angular app in project.
+ * If wm buildType , do the build in wavemaker mode.
+ * If angular buildType, do the build in angular mode.
+ */
+const init = async () => {
     /**
      * By default optimizeUIBuild will be true.
      * If environment is windows then optimizeUIBuild flag will be false which install all node modules.
-     * If otherhen windows symlink the node_modules
-   */
-    let  optimizeUIBuild;
-    if(args.optimizeUIBuild) {
-         optimizeUIBuild = args.optimizeUIBuild === 'true';
+     * If other than windows symlink the node_modules
+     */
+    let optimizeUIBuild;
+    if (args.optimizeUIBuild) {
+        optimizeUIBuild = args.optimizeUIBuild === 'true';
     } else {
-         optimizeUIBuild =  !isWindows();
+        optimizeUIBuild = !isWindows();
     }
+    args.appSrc = args.appSrc || path.resolve(".");
+    args.appSrc = path.isAbsolute(args.appSrc) ? args.appSrc : path.resolve(args.appSrc);
 
+    let appTarget = (args.appTarget || path.join(args.appTarget, 'target/ui-build/generated-app'));
+    args.appTarget = path.isAbsolute(args.appTarget) ? args.appTarget : path.resolve(args.appTarget);
     /**
      *  If optimization enabled download it in .wm folder at homedir
      *  If optimization not enabled download it in appTarget folder
      */
     let baseDir = optimizeUIBuild ? undefined : appTarget.split('/').slice(0, 2).join('/') + '/';
-    if(args.generate_page){
-        // To generate the angular app specific page
-        const FILE_PATH_CODEGEN_INSTALLATION = downloadCodegenAndGetTheInstallationPath(baseDir);
-       await generateAngularAppPage(sourceDir, appTarget, args.generate_page, FILE_PATH_CODEGEN_INSTALLATION);
-    } else if (args.generateAngularApp) {
-        // TO generate the angular app
-        console.log('Angular app generation mode');
-        const FILE_PATH_CODEGEN_INSTALLATION = downloadCodegenAndGetTheInstallationPath(baseDir);
-        await generateAngularApp(sourceDir, getNgBuildParams(), FILE_PATH_CODEGEN_INSTALLATION, appTarget);
-    } else if (args.buildType === BUILD_TYPE.WM) {
-        buildAppInWMMode(sourceDir, baseDir);
-    } else if (args.buildType === BUILD_TYPE.ANGULAR) {
-        let angularBuildConfig = {
-            sourceDir: sourceDir,
-            appTarget: appTarget,
-            baseDir: baseDir,
-            optimizeUIBuild: optimizeUIBuild
-        };
-      await  buildAppInAngularMode(angularBuildConfig);
-     }
- }
- init();
- 
+    //in windows case convert it to absolute path
+    baseDir = baseDir ? path.resolve(baseDir) : baseDir;
+    let angularCodegenPath = await downloadCodegenAndGetTheInstallationPath(baseDir);
+
+    const {initBuild} = require(path.join(angularCodegenPath, "build-angular-app.js"));
+    let buildConfigObj = {
+        ...args,
+        codegenPath: angularCodegenPath,
+        optimizeUIBuild: optimizeUIBuild,
+        hooks: {
+            preBuildHook: preBuildHook,
+            postBuildHook: postBuildHook
+        }
+    }
+    initBuild(buildConfigObj);
+}
+init();

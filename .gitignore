@@ -27,7 +27,9 @@ src/main/webapp/wmapp/**
 src/main/webapp/wmmobile/**
 target/**
 src/main/webapp/WEB-INF/prefabs/*/build/**
+src/main/webapp/WEB-INF/prefabs/**/page.min.json
 generated-angular-app/**
 inspection_results.json
 src/main/webapp/WEB-INF/data/*.properties
-.wm/**
+.wm/**src/main/webapp/extensions/components/build/**
+src/main/webapp/extensions/components/node_modules/**
