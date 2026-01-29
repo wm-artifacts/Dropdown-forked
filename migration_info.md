@@ -1,5 +1,21 @@
 # 🚀 Migration Report
 
+## 📌 Version: 11.13
+
+- Updated .gitignore with new patterns `[generated-react-app/**, src/main/webapp/design-tokens/temp-tokens, src/main/webapp/design-tokens/app.override.css]`
+
+
+- Added new default file `package-override.json` to /build-src/
+- Added new default file `eslintrc-override.js` to /build-src/
+
+
+- Removed aria label attribute from `1` page markup files
+
+
+- Updated ui-build.js file
+- Updated build.xml file
+
+
 ## 📌 Version: 11.10
 
 - Updated ui-build.js file with fixes supporting concurrent builds

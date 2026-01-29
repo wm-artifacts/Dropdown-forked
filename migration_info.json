@@ -145,5 +145,59 @@
     "onReleaseVersion" : "11.11",
     "migrationVersion" : 1111.07,
     "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.01,
+    "migrationMessages" : [ {
+      "msg" : "Updated ui-build.js file",
+      "args" : [ ]
+    }, {
+      "msg" : "Updated build.xml file",
+      "args" : [ ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.02,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.03,
+    "migrationMessages" : [ {
+      "msg" : "Removed aria label attribute from {} page markup files",
+      "args" : [ 1 ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.04,
+    "migrationMessages" : [ {
+      "msg" : "Added new default file {} to /build-src/",
+      "args" : [ "package-override.json" ]
+    }, {
+      "msg" : "Added new default file {} to /build-src/",
+      "args" : [ "eslintrc-override.js" ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.05,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.06,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.07,
+    "migrationMessages" : [ {
+      "msg" : "Updated .gitignore with new patterns {}",
+      "args" : [ [ "generated-react-app/**", "src/main/webapp/design-tokens/temp-tokens", "src/main/webapp/design-tokens/app.override.css" ] ]
+    } ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.08,
+    "migrationMessages" : [ ]
+  }, {
+    "onReleaseVersion" : "11.13",
+    "migrationVersion" : 1113.09,
+    "migrationMessages" : [ ]
   } ]
 }

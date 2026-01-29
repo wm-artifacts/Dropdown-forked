@@ -79,7 +79,7 @@
         <antcall target="cmd-template">
             <param name="cmd.name" value="node"/>
             <param name="cmd.arg"
-                value="ui-build.js --nodeVMArgs='${build.ui.node.args}' --ngBuildParams='${build.ui.ng.config}' --runtimeUIVersion=${wavemaker.app.runtime.ui.version} --appSrc=. --appTarget=./target/ui-build/generated-app --buildType=${build.ui.mode} --platformType=${wavemaker.artifactType} --cdnUrl=${app.cdnUrl} --apiUrl=${app.apiUrl} --optimizeUIBuild=${optimizeUIBuild} --exportWebComponent=${exportWebComponent} --pwa=${app.pwa.enabled} --csp=${security.general.csp.enabled} --spa=${app.build.ui.spa.enabled}"/>
+                   value="ui-build.js --nodeVMArgs='${build.ui.node.args}' --ngBuildParams='${build.ui.ng.config}' --runtimeUIVersion=${wavemaker.app.runtime.ui.version} --appSrc=. --appTarget=./target/ui-build/generated-app --buildType=${build.ui.mode} --contextPath=${app.contextPath} --serverPath=${app.serverPath} --platformType=${wavemaker.artifactType} --cdnUrl=${app.cdnUrl} --apiUrl=${app.apiUrl} --optimizeUIBuild=${optimizeUIBuild} --exportWebComponent=${exportWebComponent} --pwa=${app.pwa.enabled} --csp=${security.general.csp.enabled} --spa=${app.build.ui.spa.enabled}"/>
             <param name="cmd.executable.dir" value="./"/>
         </antcall>
     </target>

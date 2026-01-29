@@ -26,6 +26,8 @@ const path = require("path");
 
 const MSG_CODEGEN_LOG = 'CODEGEN ANGULAR APP: ';
 const MSG_ANGULAR_CODEGEN_SUCCESS = 'ANGULAR_CODEGEN_SUCCESS';
+const MSG_REACT_CODEGEN_LOG = 'CODEGEN REACT APP: ';
+const MSG_REACT_CODEGEN_SUCCESS = 'REACT_CODEGEN_SUCCESS';
 const NPM_PACKAGE_SCOPE = '@wavemaker';
 
 /**
@@ -230,15 +232,7 @@ const isWindows = () => {
  * Download angular codegen package and install if it is doesn't exist
  * @returns Return the codegen package path
  */
-const downloadCodegenAndGetTheInstallationPath = async (basedir) => {
-    let codegenPackageInfo = {
-        scope: NPM_PACKAGE_SCOPE,
-        version: args.runtimeUIVersion,
-        name: 'angular-codegen',
-        packageJsonFile: '',
-        successMsg: MSG_ANGULAR_CODEGEN_SUCCESS,
-        infoMsg: MSG_CODEGEN_LOG
-    };
+const downloadCodegenAndGetTheInstallationPath =async (basedir, codegenPackageInfo) => {
     codegenPackageInfo.baseDir = basedir;
     const PATH_ANGULAR_CODEGEN = await downloadNPMPackage(codegenPackageInfo);
     return PATH_ANGULAR_CODEGEN + '/node_modules/' + codegenPackageInfo.scope + '/' + codegenPackageInfo.name + '/';
@@ -287,18 +281,51 @@ const init = async () => {
     let baseDir = optimizeUIBuild ? undefined : appTarget.split('/').slice(0, 2).join('/') + '/';
     //in windows case convert it to absolute path
     baseDir = baseDir ? path.resolve(baseDir) : baseDir;
-    let angularCodegenPath = await downloadCodegenAndGetTheInstallationPath(baseDir);
+    const buildType = args.buildType;
+    let codegenPackageInfo = {
+        scope: NPM_PACKAGE_SCOPE,
+        version: args.runtimeUIVersion,
+        name: '',
+        packageJsonFile: '',
+        successMsg: '',
+        infoMsg: ''
+    };
 
-    const {initBuild} = require(path.join(angularCodegenPath, "build-angular-app.js"));
-    let buildConfigObj = {
-        ...args,
-        codegenPath: angularCodegenPath,
-        optimizeUIBuild: optimizeUIBuild,
-        hooks: {
-            preBuildHook: preBuildHook,
-            postBuildHook: postBuildHook
+    if(buildType === 'react') {
+        codegenPackageInfo.name = 'react-codegen';
+        codegenPackageInfo.successMsg = MSG_REACT_CODEGEN_SUCCESS;
+        codegenPackageInfo.infoMsg = MSG_REACT_CODEGEN_LOG;
+        let reactCodegenPath = await downloadCodegenAndGetTheInstallationPath(baseDir, codegenPackageInfo);
+        const { initBuild } = require(path.join(
+            reactCodegenPath,
+            "build-react-web.js"
+        ));
+        let buildConfigObj = {
+            ...args,
+            codegenPath: reactCodegenPath,
+            sourceDir: args.appSrc,
+            env:{
+                basePath: args.contextPath,
+                serverPath: args.serverPath
+            }
+        };
+        initBuild(buildConfigObj);
+    } else {
+        codegenPackageInfo.name = 'angular-codegen';
+        codegenPackageInfo.successMsg = MSG_ANGULAR_CODEGEN_SUCCESS;
+        codegenPackageInfo.infoMsg = MSG_CODEGEN_LOG;
+        let angularCodegenPath = await downloadCodegenAndGetTheInstallationPath(baseDir, codegenPackageInfo);
+        const {initBuild} = require(path.join(angularCodegenPath, "build-angular-app.js"));
+        let buildConfigObj = {
+            ...args,
+            codegenPath: angularCodegenPath,
+            optimizeUIBuild: optimizeUIBuild,
+            hooks: {
+                preBuildHook: preBuildHook,
+                postBuildHook: postBuildHook
+            }
         }
+        initBuild(buildConfigObj);
     }
-    initBuild(buildConfigObj);
 }
 init();
